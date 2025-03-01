@@ -1,0 +1,60 @@
+<html>
+<head>
+    <title>Randomize Cosmetics</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 20px;
+        }
+        .bookmarklet {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            text-decoration: none;
+            font-size: 18px;
+            border-radius: 5px;
+            cursor: grab;
+        }
+    </style>
+</head>
+<body>
+    <h2>Drag the button to your bookmarks bar!</h2>
+    <a class="bookmarklet" href="javascript:(function() { 
+        async function randomizeCosmetics() { 
+            const userId = new URLSearchParams(window.location.search).get('user_id'); 
+            if (!userId) return alert('No user ID found in the URL!'); 
+
+            let userInfo = await fetch(`https://api.slin.dev/grab/v1/get_user_info?user_id=${userId}`).then(res => res.json()); 
+            let shopItems = await fetch('https://api.slin.dev/grab/v1/get_shop_items?version=3').then(res => res.json()); 
+            
+            let categories = { head: [], hand: [], hat: [], glasses: [] }; 
+            shopItems.forEach(item => { 
+                if (item.category && categories[item.category]) { 
+                    categories[item.category].push(item); 
+                } 
+            }); 
+            
+            let randomizedItems = Object.keys(categories).flatMap(category => { 
+                let items = categories[category]; 
+                return items.length ? items[Math.floor(Math.random() * items.length)].items : []; 
+            }); 
+            
+            userInfo.items = randomizedItems; 
+            
+            window.fetch = new Proxy(window.fetch, { 
+                apply: (target, thisArg, args) => { 
+                    if (args[0].includes('/get_user_info?user_id=')) { 
+                        return new Promise(resolve => resolve(new Response(JSON.stringify(userInfo), { status: 200, headers: { 'Content-Type': 'application/json' }}))); 
+                    } 
+                    return Reflect.apply(target, thisArg, args); 
+                } 
+            }); 
+            
+            alert('Cosmetics randomized! Refresh the page to see changes.'); 
+        } 
+        randomizeCosmetics(); 
+    })();">Randomize Cosmetics!</a>
+</body>
+</html>
