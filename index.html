@@ -43,16 +43,17 @@
             
             userInfo.items = randomizedItems; 
             
-            window.fetch = new Proxy(window.fetch, { 
-                apply: (target, thisArg, args) => { 
-                    if (args[0].includes('/get_user_info?user_id=')) { 
-                        return new Promise(resolve => resolve(new Response(JSON.stringify(userInfo), { status: 200, headers: { 'Content-Type': 'application/json' }}))); 
-                    } 
-                    return Reflect.apply(target, thisArg, args); 
-                } 
-            }); 
-            
-            alert('Cosmetics randomized! Refresh the page to see changes.'); 
+            function overrideAPI() { 
+                let realFetch = window.fetch; 
+                window.fetch = function() { 
+                    if (arguments[0].includes('/get_user_info?user_id=')) {
+                        return Promise.resolve(new Response(JSON.stringify(userInfo), { status: 200, headers: { 'Content-Type': 'application/json' }})); 
+                    }
+                    return realFetch.apply(this, arguments); 
+                }; 
+            } 
+            overrideAPI();
+            alert('Cosmetics randomized! Refresh the page to see changes.');
         } 
         randomizeCosmetics(); 
     })();">Randomize Cosmetics!</a>
